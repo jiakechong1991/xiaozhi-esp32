@@ -14,6 +14,7 @@
 
 extern "C" void app_main(void)
 {
+    // 入口程序
     // Initialize the default event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
