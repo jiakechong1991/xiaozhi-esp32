@@ -65,14 +65,14 @@ public:
     AudioService& GetAudioService() { return audio_service_; }
 
 private:
-    Application();
-    ~Application();
+    Application(); //构造函数
+    ~Application(); //析构函数
 
     std::mutex mutex_;
     std::deque<std::function<void()>> main_tasks_;
     std::unique_ptr<Protocol> protocol_;
     EventGroupHandle_t event_group_ = nullptr;
-    esp_timer_handle_t clock_timer_handle_ = nullptr;
+    esp_timer_handle_t clock_timer_handle_ = nullptr;  // 时钟定时器句柄
     volatile DeviceState device_state_ = kDeviceStateUnknown;
     ListeningMode listening_mode_ = kListeningModeAutoStop;
     AecMode aec_mode_ = kAecOff;

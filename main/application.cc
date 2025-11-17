@@ -36,6 +36,7 @@ static const char* const STATE_STRINGS[] = {
 };
 
 Application::Application() {
+    // 创建 FreeRTOS 事件组，用于任务间同步和通信，事件组是 ESP32 中常用的任务间通信机制
     event_group_ = xEventGroupCreate();
 
 #if CONFIG_USE_DEVICE_AEC && CONFIG_USE_SERVER_AEC
@@ -361,6 +362,7 @@ void Application::Start() {
     audio_service_.Start();
 
     AudioServiceCallbacks callbacks;
+    // 设置音频的几个回调函数
     callbacks.on_send_queue_available = [this]() {
         xEventGroupSetBits(event_group_, MAIN_EVENT_SEND_AUDIO);
     };
@@ -373,12 +375,14 @@ void Application::Start() {
     audio_service_.SetCallbacks(callbacks);
 
     // Start the main event loop task with priority 3
+    // 创建主事件循环，优先级3， 栈大小8K
     xTaskCreate([](void* arg) {
         ((Application*)arg)->MainEventLoop();
         vTaskDelete(NULL);
     }, "main_event_loop", 2048 * 4, this, 3, &main_event_loop_task_handle_);
 
     /* Start the clock timer to update the status bar */
+    // 每秒更新一次状态栏
     esp_timer_start_periodic(clock_timer_handle_, 1000000);
 
     /* Wait for the network to be ready */
@@ -391,6 +395,7 @@ void Application::Start() {
     CheckAssetsVersion();
 
     // Check for new firmware version or get the MQTT broker address
+    // 访问服务端，获得固件版本信息和服务器信息
     Ota ota;
     CheckNewVersion(ota);
 
@@ -528,6 +533,7 @@ void Application::Start() {
             ESP_LOGW(TAG, "Unknown message type: %s", type->valuestring);
         }
     });
+    // 跟服务器创建web-scoket连接
     bool protocol_started = protocol_->Start();
 
     SystemInfo::PrintHeapStats();
