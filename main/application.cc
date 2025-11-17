@@ -397,7 +397,7 @@ void Application::Start() {
     // Check for new firmware version or get the MQTT broker address
     // 访问服务端，获得固件版本信息和服务器信息
     Ota ota;
-    CheckNewVersion(ota);
+    CheckNewVersion(ota);  // 该函数
 
     // Initialize the protocol
     display->SetStatus(Lang::Strings::LOADING_PROTOCOL);
@@ -425,11 +425,13 @@ void Application::Start() {
         xEventGroupSetBits(event_group_, MAIN_EVENT_ERROR);
     });
     protocol_->OnIncomingAudio([this](std::unique_ptr<AudioStreamPacket> packet) {
+        // 处理收到的音频数据
         if (device_state_ == kDeviceStateSpeaking) {
             audio_service_.PushPacketToDecodeQueue(std::move(packet));
         }
     });
     protocol_->OnAudioChannelOpened([this, codec, &board]() {
+        // 音频通道打开时调用
         board.SetPowerSaveMode(false);
         if (protocol_->server_sample_rate() != codec->output_sample_rate()) {
             ESP_LOGW(TAG, "Server sample rate %d does not match device output sample rate %d, resampling may cause distortion",
@@ -437,6 +439,7 @@ void Application::Start() {
         }
     });
     protocol_->OnAudioChannelClosed([this, &board]() {
+        // 音频通道关闭时调用
         board.SetPowerSaveMode(true);
         Schedule([this]() {
             auto display = Board::GetInstance().GetDisplay();
@@ -445,6 +448,7 @@ void Application::Start() {
         });
     });
     protocol_->OnIncomingJson([this, display](const cJSON* root) {
+        // 处理收到的JSON数据
         // Parse JSON data
         auto type = cJSON_GetObjectItem(root, "type");
         if (strcmp(type->valuestring, "tts") == 0) {
@@ -541,6 +545,7 @@ void Application::Start() {
 
     has_server_time_ = ota.HasServerTime();
     if (protocol_started) {
+        // 向着服务器 发送hello信息
         std::string message = std::string(Lang::Strings::VERSION) + ota.GetCurrentVersion();
         display->ShowNotification(message.c_str());
         display->SetChatMessage("system", "");
@@ -575,7 +580,7 @@ void Application::MainEventLoop() {
             Alert(Lang::Strings::ERROR, last_error_message_.c_str(), "circle_xmark", Lang::Sounds::OGG_EXCLAMATION);
         }
 
-        if (bits & MAIN_EVENT_SEND_AUDIO) {
+        if (bits & MAIN_EVENT_SEND_AUDIO) { //发送音频数据
             while (auto packet = audio_service_.PopPacketFromSendQueue()) {
                 if (protocol_ && !protocol_->SendAudio(std::move(packet))) {
                     break;
