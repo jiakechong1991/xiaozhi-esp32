@@ -347,23 +347,27 @@ void Application::StopListening() {
 }
 
 void Application::Start() {
+    // 获得板卡对象
     auto& board = Board::GetInstance();
-    SetDeviceState(kDeviceStateStarting);
+    SetDeviceState(kDeviceStateStarting);  // 设置状态机
 
     /* Setup the display */
+    // 获得显示屏的封装类
     auto display = board.GetDisplay();
 
     // Print board name/version info
     display->SetChatMessage("system", SystemInfo::GetUserAgent().c_str());
 
     /* Setup the audio service */
+    // 获得音频编码器的封装类
     auto codec = board.GetAudioCodec();
     audio_service_.Initialize(codec);
     audio_service_.Start();
 
     AudioServiceCallbacks callbacks;
-    // 设置音频的几个回调函数
-    callbacks.on_send_queue_available = [this]() {
+    // 设置音频的几个回调函数（这些回调函数会被audio_service_内部根据硬件情况进行调用，然后他们会设置对应的状态位，
+    // 便于异步通知其他上层逻辑）
+    callbacks.on_send_queue_available = [this]() { // lambda匿名函数
         xEventGroupSetBits(event_group_, MAIN_EVENT_SEND_AUDIO);
     };
     callbacks.on_wake_word_detected = [this](const std::string& wake_word) {
@@ -391,13 +395,13 @@ void Application::Start() {
     // Update the status bar immediately to show the network state
     display->UpdateStatusBar(true);
 
-    // Check for new assets version
+    // Check for new assets version？？？这里是下载什么呢？
     CheckAssetsVersion();
 
     // Check for new firmware version or get the MQTT broker address
-    // 访问服务端，获得固件版本信息和服务器信息
+    // 访问服务端，获得固件版本更新信息和服务器连接信息
     Ota ota;
-    CheckNewVersion(ota);  // 该函数
+    CheckNewVersion(ota);  // 
 
     // Initialize the protocol
     display->SetStatus(Lang::Strings::LOADING_PROTOCOL);
@@ -407,6 +411,7 @@ void Application::Start() {
     mcp_server.AddCommonTools();
     mcp_server.AddUserOnlyTools();
 
+    // 根据服务器的地址类型，配置通信协议
     if (ota.HasMqttConfig()) {
         protocol_ = std::make_unique<MqttProtocol>();
     } else if (ota.HasWebsocketConfig()) {
@@ -545,7 +550,7 @@ void Application::Start() {
 
     has_server_time_ = ota.HasServerTime();
     if (protocol_started) {
-        // 向着服务器 发送hello信息
+        // 展示进入空闲模式
         std::string message = std::string(Lang::Strings::VERSION) + ota.GetCurrentVersion();
         display->ShowNotification(message.c_str());
         display->SetChatMessage("system", "");
@@ -746,6 +751,7 @@ void Application::Reboot() {
 }
 
 bool Application::UpgradeFirmware(Ota& ota, const std::string& url) {
+    // 在线OTA更新固件
     auto& board = Board::GetInstance();
     auto display = board.GetDisplay();
     

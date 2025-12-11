@@ -3,7 +3,7 @@
 
 enum DeviceState {
     kDeviceStateUnknown,
-    kDeviceStateStarting,
+    kDeviceStateStarting,  //开机
     kDeviceStateWifiConfiguring,
     kDeviceStateIdle,
     kDeviceStateConnecting,
