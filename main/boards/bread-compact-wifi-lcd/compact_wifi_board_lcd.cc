@@ -7,6 +7,7 @@
 #include "config.h"
 #include "mcp_server.h"
 #include "lamp_controller.h"
+#include "assets/lang_config.h"
 #include "led/single_led.h"
 
 #include <wifi_station.h>
@@ -64,6 +65,8 @@ class CompactWifiBoardLCD : public WifiBoard {
 private:
  
     Button boot_button_;
+    Button volume_up_button_;
+    Button volume_down_button_;
     LcdDisplay* display_;
 
     void InitializeSpi() {
@@ -131,6 +134,40 @@ private:
             }
             app.ToggleChatState();
         });
+
+        volume_up_button_.OnClick([this]() {
+            // power_save_timer_->WakeUp();
+            auto codec = GetAudioCodec();
+            auto volume = codec->output_volume() + 10;
+            if (volume > 100) {
+                volume = 100;
+            }
+            codec->SetOutputVolume(volume);
+            GetDisplay()->ShowNotification(Lang::Strings::VOLUME + std::to_string(volume));
+        });
+
+        volume_up_button_.OnLongPress([this]() {
+            // power_save_timer_->WakeUp();
+            GetAudioCodec()->SetOutputVolume(100);
+            GetDisplay()->ShowNotification(Lang::Strings::MAX_VOLUME);
+        });
+        volume_down_button_.OnClick([this]() {
+            // power_save_timer_->WakeUp();
+            auto codec = GetAudioCodec();
+            auto volume = codec->output_volume() - 10;
+            if (volume < 0) {
+                volume = 0;
+            }
+            codec->SetOutputVolume(volume);
+            GetDisplay()->ShowNotification(Lang::Strings::VOLUME + std::to_string(volume));
+        });
+
+        volume_down_button_.OnLongPress([this]() {
+            // power_save_timer_->WakeUp();
+            GetAudioCodec()->SetOutputVolume(0);
+            GetDisplay()->ShowNotification(Lang::Strings::MUTED);
+        });
+
     }
 
     // 物联网初始化，添加对 AI 可见设备
@@ -140,7 +177,9 @@ private:
 
 public:
     CompactWifiBoardLCD() :
-        boot_button_(BOOT_BUTTON_GPIO) {
+        boot_button_(BOOT_BUTTON_GPIO),
+        volume_up_button_(VOLUME_UP_BUTTON_GPIO),
+        volume_down_button_(VOLUME_DOWN_BUTTON_GPIO) {
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeButtons();
