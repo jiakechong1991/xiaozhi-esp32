@@ -296,13 +296,11 @@ void AudioService::AudioOutputTask() {
             codec_->EnableOutput(true);
         }
         codec_->OutputData(task->pcm);
-        // 🔥 精准延迟：使用当前音频帧自身的时长
-        if (task->frame_duration > 0) {
-            vTaskDelay(pdMS_TO_TICKS(task->frame_duration));
-        } else {
-            // 默认20ms标准OPUS帧
-            vTaskDelay(pdMS_TO_TICKS(20));
-        }
+
+        // 默认60ms标准OPUS帧
+        vTaskDelay(pdMS_TO_TICKS(packet->frame_duration));
+        ESP_LOGI(TAG, "Playing audio frame, 设置duration: %d ms", task->frame_duration);
+
 
         /* Update the last output time */
         last_output_time_ = std::chrono::steady_clock::now();
