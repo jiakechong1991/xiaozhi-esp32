@@ -287,6 +287,10 @@ void AudioService::AudioOutputTask() {
 
         auto task = std::move(audio_playback_queue_.front());
         audio_playback_queue_.pop_front();
+
+        // 🔥 关键：锁还没释放，线程安全地读取队列剩余长度
+        size_t queue_size = audio_playback_queue_.size();
+
         audio_queue_cv_.notify_all();
         lock.unlock();
 
@@ -298,9 +302,8 @@ void AudioService::AudioOutputTask() {
         codec_->OutputData(task->pcm);
 
         // 默认60ms标准OPUS帧
-        vTaskDelay(pdMS_TO_TICKS(packet->frame_duration));
-        ESP_LOGI(TAG, "Playing audio frame, 设置duration: %d ms", task->frame_duration);
-
+        //vTaskDelay(pdMS_TO_TICKS(60));
+        ESP_LOGI(TAG, "Playing audio frame, playback queue left: %u", (unsigned int)queue_size);
 
         /* Update the last output time */
         last_output_time_ = std::chrono::steady_clock::now();
@@ -324,14 +327,14 @@ void AudioService::OpusCodecTask() {
         audio_queue_cv_.wait(lock, [this]() {
             return service_stopped_ ||
                 (!audio_encode_queue_.empty() && audio_send_queue_.size() < MAX_SEND_PACKETS_IN_QUEUE) ||
-                (!audio_decode_queue_.empty() && audio_playback_queue_.size() < MAX_PLAYBACK_TASKS_IN_QUEUE);
+                (!audio_decode_queue_.empty());
         });
         if (service_stopped_) {
             break;
         }
 
         /* Decode the audio from decode queue */
-        if (!audio_decode_queue_.empty() && audio_playback_queue_.size() < MAX_PLAYBACK_TASKS_IN_QUEUE) {
+        if (!audio_decode_queue_.empty()) {
             auto packet = std::move(audio_decode_queue_.front());
             audio_decode_queue_.pop_front();
             audio_queue_cv_.notify_all();

@@ -468,6 +468,10 @@ void Application::Start() {
             } else if (strcmp(state->valuestring, "stop") == 0) {
                 Schedule([this]() {
                     if (device_state_ == kDeviceStateSpeaking) {
+                        // 🔥 修复：等待音频播完，再切状态！(否则一旦切换状态，剩余的一些没播放完的音频队列就会丢弃)
+                        while (!audio_service_.IsPlaybackQueueEmpty()) {
+                            vTaskDelay(pdMS_TO_TICKS(60));
+                        }
                         if (listening_mode_ == kListeningModeManualStop) {
                             SetDeviceState(kDeviceStateIdle);
                         } else {

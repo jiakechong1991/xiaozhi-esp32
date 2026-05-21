@@ -38,8 +38,8 @@
 #define OPUS_FRAME_DURATION_MS 60
 #define MAX_ENCODE_TASKS_IN_QUEUE 2
 #define MAX_PLAYBACK_TASKS_IN_QUEUE 2
-#define MAX_DECODE_PACKETS_IN_QUEUE (2400 / OPUS_FRAME_DURATION_MS)
-#define MAX_SEND_PACKETS_IN_QUEUE (2400 / OPUS_FRAME_DURATION_MS)
+#define MAX_DECODE_PACKETS_IN_QUEUE (24000 / OPUS_FRAME_DURATION_MS)
+#define MAX_SEND_PACKETS_IN_QUEUE (4800 / OPUS_FRAME_DURATION_MS)
 #define AUDIO_TESTING_MAX_DURATION_MS 10000
 #define MAX_TIMESTAMPS_IN_QUEUE 3
 
@@ -110,6 +110,11 @@ public:
     void ResetDecoder();
     // 🔥 打断播放：立即停止所有音频，清空所有队列（解码/播放/测试）
     void StopPlayback();
+        // 新增：判断播放队列是否为空
+    bool IsPlaybackQueueEmpty() {
+        std::lock_guard<std::mutex> lock(audio_queue_mutex_);
+        return audio_playback_queue_.empty();
+    }
     void SetModelsList(srmodel_list_t* models_list);
 
 private:
