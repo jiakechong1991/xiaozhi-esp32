@@ -255,6 +255,27 @@ void AudioService::AudioInputTask() {
 
     ESP_LOGW(TAG, "Audio input task stopped");
 }
+void AudioService::StopPlayback() {
+    // 1. 加互斥锁：保证多线程操作队列绝对安全（核心！）
+    std::lock_guard<std::mutex> lock(audio_queue_mutex_);
+
+    // 2. 立即禁用硬件音频输出 → 立刻静音，停止当前播放的声音
+    codec_->EnableOutput(false);
+
+    // 3. 重置OPUS解码器，清除残留的解码数据
+    opus_decoder_->ResetState();
+
+    // 4. 清空所有音频队列（彻底清除待播放/待解码的OPUS）
+    timestamp_queue_.clear();       // 时间戳队列
+    audio_decode_queue_.clear();    // 🔥 服务器发来的待解码OPUS队列（你最关心的）
+    audio_playback_queue_.clear();  // 待硬件播放的PCM队列
+    audio_testing_queue_.clear();   // 音频测试队列
+
+    // 5. 通知后台任务：队列已清空，解除阻塞
+    audio_queue_cv_.notify_all();
+
+    ESP_LOGI(TAG, "Playback stopped! All audio queues 清除 (decode/playback/testing)");
+}
 
 void AudioService::AudioOutputTask() {
     while (true) {
@@ -275,6 +296,13 @@ void AudioService::AudioOutputTask() {
             codec_->EnableOutput(true);
         }
         codec_->OutputData(task->pcm);
+        // 🔥 精准延迟：使用当前音频帧自身的时长
+        if (task->frame_duration > 0) {
+            vTaskDelay(pdMS_TO_TICKS(task->frame_duration));
+        } else {
+            // 默认20ms标准OPUS帧
+            vTaskDelay(pdMS_TO_TICKS(20));
+        }
 
         /* Update the last output time */
         last_output_time_ = std::chrono::steady_clock::now();

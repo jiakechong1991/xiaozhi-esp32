@@ -108,6 +108,8 @@ public:
     void PlaySound(const std::string_view& sound);
     bool ReadAudioData(std::vector<int16_t>& data, int sample_rate, int samples);
     void ResetDecoder();
+    // 🔥 打断播放：立即停止所有音频，清空所有队列（解码/播放/测试）
+    void StopPlayback();
     void SetModelsList(srmodel_list_t* models_list);
 
 private:

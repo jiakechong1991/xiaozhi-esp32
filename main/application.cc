@@ -670,8 +670,10 @@ void Application::AbortSpeaking(AbortReason reason) {
     ESP_LOGI(TAG, "Abort speaking");
     aborted_ = true;
     if (protocol_) {
-        protocol_->SendAbortSpeaking(reason);
+        protocol_->SendAbortSpeaking(reason);  //向服务端发送打断信号
     }
+    // 🔥 添加这一行：调用打断函数，立即停止播放+清空队列
+    audio_service_.StopPlayback();
 }
 
 void Application::SetListeningMode(ListeningMode mode) {
