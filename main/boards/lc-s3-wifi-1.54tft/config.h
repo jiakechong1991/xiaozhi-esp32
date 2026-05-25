@@ -48,7 +48,7 @@
 #define RELAY_LED    GPIO_NUM_17
 
 // 产线测试默认WiFi（可根据需要修改或注释掉）
-#define DEFAULT_WIFI_SSID     "LCTECH-02"
-#define DEFAULT_WIFI_PASSWORD "1234567890abc"
+// #define DEFAULT_WIFI_SSID     "LCTECH-02"
+// #define DEFAULT_WIFI_PASSWORD "1234567890abc"
 
 #endif // _BOARD_CONFIG_H_
