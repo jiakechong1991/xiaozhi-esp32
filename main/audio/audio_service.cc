@@ -294,8 +294,9 @@ void AudioService::StopPlayback() {
     codec_->EnableOutput(false);
 
     // 3. 重置OPUS解码器，清除残留的解码数据
-    opus_decoder_->ResetState();
-
+    if (opus_decoder_ != nullptr) {
+        esp_opus_dec_reset(opus_decoder_);
+    }
     // 4. 清空所有音频队列（彻底清除待播放/待解码的OPUS）
     timestamp_queue_.clear();       // 时间戳队列
     audio_decode_queue_.clear();    // 🔥 服务器发来的待解码OPUS队列（你最关心的）
